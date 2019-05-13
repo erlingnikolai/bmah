@@ -63,4 +63,7 @@ public class Discord implements EventListener {
     }
 
 
+    public void stopThread() {
+        // code inc
+    }
 }

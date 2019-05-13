@@ -30,27 +30,49 @@ public class Main {
     static Thread sheetManager;
     static boolean sheetManagerBoolean;
 
-
     public static void main(String[] args) throws InterruptedException, GeneralSecurityException, IOException {
+        addFromProperties(loadProperties("src/main/resources/config.properties"));
+        new JDABuilder(discord.getToken()).addEventListener(discord).build().awaitReady();
+        ValueRange realms = googleSheet.getCellValues("ProcessData!A1:A");
+        if (realms.getValues() != null) { //if the google sheet does not connect properly there is no point to continue to run the Code
+            wipeData();
+            prepareThreads(realms);
+        } else {
+            discord.stopThread();
+        }
+    }
 
-        InputStream input = new FileInputStream("src/main/resources/config.properties");
-        Properties prop = new Properties();
-        prop.load(input);
 
-
+    /**
+     * Gets data from the properties file and links the with the objects requires
+     * Doing this we encapsulate important code like tokens etc from the java files itself and it can be hidden on git.
+     * @param prop with all the properties values
+     */
+    private static void addFromProperties(Properties prop) {
         discord = new Discord(prop.getProperty("discord.token"));
         googleSheet = new GoogleSheet(prop.getProperty("sheets.spreadsheetId"));
         url = prop.getProperty("website.url");
+    }
 
-        new JDABuilder(discord.getToken()).addEventListener(discord).build().awaitReady();
-        ValueRange realms = googleSheet.getCellValues("ProcessData!A1:A");
-        if (realms.getValues() != null) { //if the google sheet does not connect properly
-            wipeData();
-            realms.getValues().forEach(realm -> realmList.put(realm.toString().substring(1, realm.toString().length() - 1), new ArrayList<>())); // [realm] -> realm
-            WipeData wipeSheet1 = createWipeThread(10, 0, 600000); //10 min
-            WipeData wipeSheet2 = createWipeThread(23, 30, 3600000); //60 min - should be more readable
-            checkIfCloseToWipe(wipeSheet1, wipeSheet2);
-        }
+
+    /**
+     * creates a Properties object
+     * @param name the name of file
+     * @return the properties object
+     * @throws IOException
+     */
+    private static Properties loadProperties(String name) throws IOException {
+        InputStream input = new FileInputStream(name);
+        Properties prop = new Properties();
+        prop.load(input);
+        return prop;
+    }
+
+    private static void prepareThreads(ValueRange realms) {
+        realms.getValues().forEach(realm -> realmList.put(realm.toString().substring(1, realm.toString().length() - 1), new ArrayList<>())); // [realm] -> realm
+        WipeData wipeSheet1 = createWipeThread(10, 0, 600000); //10 min
+        WipeData wipeSheet2 = createWipeThread(23, 30, 3600000); //60 min - should be more readable
+        checkIfCloseToWipe(wipeSheet1, wipeSheet2);
     }
 
     /**
@@ -63,9 +85,15 @@ public class Main {
     }
 
 
+    /**
+     * We would like to not do anything if there is less than 10 min until we are going to wipe the google sheet.
+     *
+     * @param wipeSheet1 The timer of the first thread created
+     * @param wipeSheet2 The timer of the second thread created
+     */
     private static void checkIfCloseToWipe(WipeData wipeSheet1, WipeData wipeSheet2) {
         long dif1 = Math.min(getTimeDiff(wipeSheet1.getTimeOfTask()), getTimeDiff(wipeSheet2.getTimeOfTask()));
-        if (dif1 >= 10) { //if it is more than 10 min to clear we tell the code to start scanning on realms
+        if (dif1 > 10) { //if it is more than 10 min to clear we tell the code to start scanning on realms
             startScanProcess();
         }
     }
@@ -83,6 +111,14 @@ public class Main {
         return Math.abs(TimeUnit.MINUTES.convert(diffInMillis, TimeUnit.MILLISECONDS));
     }
 
+    /**
+     * Some times we would like the google sheet to delete all data.
+     *
+     * @param hour  the current hour
+     * @param min   the current minute
+     * @param delay after the content is deleted we would like the thread to chill for x amount of time.
+     * @return the object itself with some data about when its supposed to invoke the code
+     */
     private static WipeData createWipeThread(int hour, int min, long delay) {
         Calendar currentTime = Calendar.getInstance();
         currentTime.set(Calendar.HOUR_OF_DAY, hour);
@@ -95,16 +131,15 @@ public class Main {
 
 
     /**
-     * not that good code quality.
-     *
-     * @param page
-     * @return
+     * @param table is a table with different items
+     * @return the size of how many items are in the table of items
+     * @apiNote this is not coded properly, should be edited
      */
-    private static int getItemsSize(HtmlDivision page) {
-        if (!(XML.toJSONObject(page.asXml()).getJSONObject("div").get("div") instanceof JSONArray)) {
+    private static int getItemsSize(HtmlDivision table) {
+        if (!(XML.toJSONObject(table.asXml()).getJSONObject("div").get("div") instanceof JSONArray)) {
             return 0;
         }
-        JSONObject sizeDiv = XML.toJSONObject(page.asXml()).getJSONObject("div").getJSONArray("div").getJSONObject(0);
+        JSONObject sizeDiv = XML.toJSONObject(table.asXml()).getJSONObject("div").getJSONArray("div").getJSONObject(0);
         return sizeDiv.has("b") ? sizeDiv.getInt("b") : 0;
     }
 
@@ -121,6 +156,11 @@ public class Main {
         return null;
     }
 
+    /**
+     * Creates changes so we can see content after Javascript has been ran on the website.
+     *
+     * @param webClient is the current webBrowser open
+     */
     private static void setWebClientOptions(WebClient webClient) {
         webClient.getOptions().setJavaScriptEnabled(true);
         webClient.getOptions().setCssEnabled(false);
@@ -136,7 +176,6 @@ public class Main {
      *
      * @param realm is the realm we need for the data to be gathered.
      * @return the data from that website or null
-     * @throws IOException handles the exception in another function.
      */
     private static JSONArray getBmahData(String realm) {
         java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF);
@@ -204,28 +243,27 @@ public class Main {
 
 
     /**
-     * Will only stor the data
+     * Will only store the data
      *
-     * @param realm
-     * @param column
+     * @param realm  the name of the current realm
+     * @param column the column that we are going to edit in the google sheet
      */
     private static void addToGoogleSheetData(String realm, int column) {
         getBmahData(realm).forEach(newItem -> {
-            if (realmList.get(realm).stream().noneMatch(item -> item.equals(getTitle(newItem)))) {
-                realmList.get(realm).add(getTitle(newItem));
+            if (realmList.get(realm).stream().noneMatch(item -> item.equals(getName(newItem)))) {
+                realmList.get(realm).add(getName(newItem));
             }
         });
         googleSheet.insertData("ProcessData!B" + column + ":I", realmList.get(realm));
     }
 
+
     /**
-     * We find the title of the item
-     *
-     * @param newItem
-     * @return
+     * @param item has multiple information like title, current bid etc
+     * @return the the name of the item
      */
-    private static String getTitle(Object newItem) {
-        return (String) ((JSONObject) newItem).getJSONArray("td").getJSONObject(0).getJSONObject("a").get("title");
+    private static String getName(Object item) {
+        return (String) ((JSONObject) item).getJSONArray("td").getJSONObject(0).getJSONObject("a").get("title");
     }
 
     /**
