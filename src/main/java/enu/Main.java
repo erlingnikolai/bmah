@@ -38,7 +38,7 @@ public class Main {
             wipeData();
             prepareThreads(realms);
         } else {
-            discord.stopThread();
+            discord.stopThread(); //currently not working
         }
     }
 
@@ -59,7 +59,7 @@ public class Main {
      * creates a Properties object
      * @param name the name of file
      * @return the properties object
-     * @throws IOException
+     * @throws IOException if it cant load the file for any reason
      */
     private static Properties loadProperties(String name) throws IOException {
         InputStream input = new FileInputStream(name);
