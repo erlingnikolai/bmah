@@ -65,7 +65,6 @@ public class Main {
 
     private static void checkIfCloseToWipe(WipeData wipeSheet1, WipeData wipeSheet2) {
         long dif1 = Math.min(getTimeDiff(wipeSheet1.getTimeOfTask()), getTimeDiff(wipeSheet2.getTimeOfTask()));
-        System.out.println(dif1);
         if (dif1 >= 10) { //if it is more than 10 min to clear we tell the code to start scanning on realms
             startScanProcess();
         }
