@@ -20,6 +20,13 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+
+/**
+ * @author erling - infamous
+ * <p>
+ * should probably be renamed.
+ * All methods that uses the library htmlunit should probably be in a unqiue file.
+ */
 public class Main {
 
 
@@ -46,6 +53,7 @@ public class Main {
     /**
      * Gets data from the properties file and links the with the objects requires
      * Doing this we encapsulate important code like tokens etc from the java files itself and it can be hidden on git.
+     *
      * @param prop with all the properties values
      */
     private static void addFromProperties(Properties prop) {
@@ -57,6 +65,7 @@ public class Main {
 
     /**
      * creates a Properties object
+     *
      * @param name the name of file
      * @return the properties object
      * @throws IOException if it cant load the file for any reason

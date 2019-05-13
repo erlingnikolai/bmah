@@ -24,6 +24,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Having all the parts of the googlesheet code into file.
+ *
+ * Has methods that will input or read data from a sheet
+ * also stores multiple variables required to connect to the gooogle sheet.
+ */
 class GoogleSheet {
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";

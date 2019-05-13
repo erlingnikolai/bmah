@@ -12,6 +12,13 @@ import net.dv8tion.jda.core.hooks.EventListener;
 import java.util.HashMap;
 
 
+/**
+ * Deals with the discord bot.
+ * Will take input from the discord chat "general" and deal with it
+ * Currently not used, since we dont want the rest of the program to crash if discord or the discord part of this program is not working.
+ *
+ * the discord bot should probably only ask the other part of the code for info and not the other way around.
+ */
 public class Discord implements EventListener {
 
     private static final enu.commands.CommandParser parser = new CommandParser();

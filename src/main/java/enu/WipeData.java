@@ -8,6 +8,11 @@ import java.util.Date;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Creates a unique thread for deleting data at a specific time.
+ * It will then wait x amount of time before start scanning a server.
+ * This thread only invokes the task itself every 24 hour.
+ */
 public class WipeData extends TimerTask {
 
 
