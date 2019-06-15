@@ -84,10 +84,7 @@ public class Main {
         checkIfCloseToWipe(wipeSheet1, wipeSheet2);
     }
 
-    /**
-     * clears the realmlist with the realms
-     * clears the google sheet fields
-     */
+
     static void wipeData() {
         googleSheet.wipeData("ProcessData!B1:I74");
         realmList.forEach((k, v) -> v.clear());
